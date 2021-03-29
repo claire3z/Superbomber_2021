@@ -1,81 +1,10 @@
 import numpy as np
 import pickle
 from itertools import combinations, permutations, product
-
-# create dictionary to get state info from index for Q-table:
-index_to_state = dict()
-state_to_index = dict()
-counter = 0
-
-### state = (vicinity_type,(neighbours),b_indicator) with all possible permutations
-for i,v in enumerate(vicinity_set):
-    # print(i,v==vicinity_set[i])
-    for n in tuple(product([-1, 0, 1, 2, 3], repeat=len(v.neighbours))):
-        state = (i,n,True)
-        state_to_index[state] = counter
-        index_to_state[counter] = state
-
-        state = (i,n,False)
-        state_to_index[state] = counter+1
-        index_to_state[counter+1] = state
-
-        counter +=2
-
-len(state_to_index) #2550
-len(index_to_state) #2550
-
-with open("./agent_code/agent_SUN/index_to_state.pk", "wb") as file:
-    pickle.dump(index_to_state, file)
-
-
-with open("./agent_code/agent_SUN/state_to_index.pk", "rb") as file:
-    state_to_index1 = pickle.load(file)
-state_to_index1 == state_to_index
-
-Q_tracker[1312] #array([    0., 13596.,     0., 21476.,     0., 10455.])
-index_to_state[1312] #(2, (0, 0), True)
-index_to_state[1313] #(2, (0, 0), False)
-index_to_state[1314] #(2, (0, 1), True)
-index_to_state[1324] #(2, (1, 1), True)
-index_to_state[1325] #(2, (1, 1), False)
-
-
-#> pip install matplotlib
 import matplotlib.pyplot as plt
 
-# >>>python main.py play --agents trainer_agent --train 1 --n-rounds 9000 --no-gui
 
-with open(path+"Q_tracker_SUN.pk", "rb") as file:
-    Q_tracker = pickle.load(file)
-print(f"Q_tracker: max={Q_tracker.max()}, sum={Q_tracker.sum()}, distribution: {np.unique(Q_tracker, return_counts=True)}")
-np.savetxt(path+'Q_tracker_1_10000.csv',Q_tracker, delimiter=',')
-
-plt.hist(Q_tracker)
-
-a = np.array([0,-np.Inf, 100, 200, 1,-10])
-np.argmax(a[[True,True,True,True,False,True]]) # this removes
-a.argsort()[-2]
-a.argsort()[-1] == a.argmax()
-
-Q_tracker.shape
-
-x, y = 1,1
-targets = [(9,10),(2,3),(1,8),(4,1)]
-b = np.array(targets) - np.array([x,y])
-min_idx = b.sum(axis=1).argmin()
-b[min_idx]>0
-np.sign([0,-99,100])
-
-
-d = np.array(targets) - np.array([x,y])
-min_idx = d.sum(axis=1).argmin() # index for nearest target based on abs(dx)+abs(dy)
-min_dist = d[min_idx].sum()
-nudge = np.sign(d[min_idx])
-
-
-a = [x for x in product([-1, 0, 1], repeat=2)]
-b = [x for x in product(['a','b'], repeat=2)]
-[x for x in product(a,b)]
+# create dictionary to get state info from index for Q-table:
 
 state_to_index = dict()
 index_to_state = dict()
@@ -114,22 +43,17 @@ vicinity_types = np.loadtxt('./agent_code/agent_SUN/model/vicinity_types.csv', d
 ACTIONS = ['UP', 'RIGHT', 'DOWN', 'LEFT', 'WAIT', 'BOMB']
 
 
-import sys
-sys.path.append('../')
-import os
-os.getcwd()
-from Project._Private_SUN import start
-start
 
 Q_save = 'agent_code/agent_SUN/model/Q_SUN.pk'
-os.path.isfile(Q_save)
-import pickle
 with open(Q_save, "rb") as file:
     Q = pickle.load(file)
 
-allowed_actions = [0,2,4,5]
-np.array(allowed_actions)[np.array(allowed_actions)<4]
+with open(path+"Q_tracker_SUN.pk", "rb") as file:
+    Q_tracker = pickle.load(file)
 
+print(f"Q_tracker: max={Q_tracker.max()}, sum={Q_tracker.sum()}, distribution: {np.unique(Q_tracker, return_counts=True)}")
+np.savetxt(path+'Q_tracker_1_10000.csv',Q_tracker, delimiter=',')
+plt.hist(Q_tracker)
 
 
 path = './agent_code/trainer_agent/model/'
@@ -138,12 +62,6 @@ tracker_save = path+'Q_tracker_trainer_1_20000_crates.pk'
 'Q_trainer_1_10000_coins.pk'
 Q_save = path+'Q_trainer_1_20000_crates.pk'
 
-c = 0
-s, a = np.where(Q == 0)[0], np.where(Q == 0)[1]
-for i in range(len(np.where(Q == 0)[0])):
-    s_,a_ = np.where(Q == 0)[0][i], np.where(Q == 0)[1][i]
-    c +=1
-print(c)
 
 def display_value(Q,x,text):
     'find a value (=x) in table (Q or tracker), display indices and correpsonding state-action'
@@ -218,11 +136,6 @@ def run_diagnosis(Q_save,tracker_save,n_round):
 
 # run_diagnosis(Q_save,tracker_save,n_round=10000)
 
-a = [1,2]
-from random import shuffle
-shuffle(a)
-
-np.random.choice([1,2])
 
 
 # DONE: add two extra bits to state to represent x:left(-1)/right(+1)/no(0), y:up(-1)/down(+1)/no(0) towards nearest target -- nudge
@@ -276,13 +189,6 @@ def nudge_direction(nudge):
     action_idx = np.arange(5)[flag].astype(int)
     return action_idx
 
-import random
-direction = nudge_direction(nudge=(0,0))
-allowed_actions = np.array([0,1,2,3])
-[i if i in allowed_actions else 'abc' for i in direction]
-preferred = [i for i in direction if i in allowed_actions]
-action = random.choice(preferred) if len(preferred) > 0 else random.choice(allowed_actions)  # choose a nudge direction if possible or a random direction if not possible
-print(preferred,action)
 
 ### current training strategy
 # train agent with coins only directly with eps_train = 1, i.e. always explore, can effectively get all coins
@@ -292,7 +198,6 @@ print(preferred,action)
 # trained trainer for 1000, 2000, and 5000 round, still no improvement when agent plays with eps 0.1 or 0.2
 # start training agent with eps_train = 0.5
 # current label '_coins_SUN_1000_crates_trainer_5000_noNudgeReward_SUN_1000_eps0.5'
-
 
 
 compare(versions=['_100_eps_1','_500_eps_1','_1000_eps_1'],path='./agent_code/agent_SUN/model/coins/')
@@ -423,31 +328,6 @@ compare(versions=['_100','_200','_300','_400','_500'],path='./agent_code/trainer
 
 
 
-# find a smarter way to calculating dof in roi
-x, y = 10,10 #agent[-1]
-b_indicator = True #agent[2]
-# vicinity_index = (self.vicinity_type[y, x]).astype(int)
-# vicinity = self.vicinity_set[vicinity_index]  # Vicinity = namedtuple('Vicinity', ['neighbours', 'explosion_range', 'actions'])
-vicinity = Vicinity(neighbours=[(0, -1), (1, 0)], explosion_range=[-3, 3], actions=[0, 1, 4, 5])
-
-neighbours = [(x + ij[0], y + ij[1]) for ij in vicinity.neighbours]  # get global coordinates of neighbours
-local_neighbourhood = np.array([0,0]) #np.array([self.treasure_map[y_, x_] for (x_, y_) in neighbours])  # get identities of neighbours from treasure map
-# boolen indicator for allowed movements [UP,RIGHT,DOWN,LEFT] based on local environment
-m_indicator = np.logical_or(local_neighbourhood == 0, local_neighbourhood == 2)  # np.array[True,False] corresponding to vicinity.actions (already restricted)
-
-# initializing nudge here to ensure it exists
-nudge = np.array([0, 0])
-
-roi_dict = {(0,-1):[-2,0,-2,3],
-     (1,0):[-2,3,1,3],
-     (0,1):[0,3,-2,3],
-     (-1,0):[-2,3,-2,0]}
-
-for sn_ij in np.array(vicinity.neighbours)[m_indicator]: # list of global coords of safe neighbours only
-    print(tuple(sn_ij))
-    j_0,j_1,i_0,i_1 = roi_dict[tuple(sn_ij)]
-    roi_ = treasure_map[max(0, y+j_0):min(s.ROWS-1, y+j_1), max(0, x+i_0):min(s.COLS-1, x+i_1)]
-    dof_ = (np.sum(roi_ == 0) + np.sum(roi_ == 2)) / roi_.size
 
 
 
@@ -564,13 +444,6 @@ compare(versions=['_combined','_CURRENT'],path='./agent_code/agent_SUN/model/gam
 
 with open('./agent_code/agent_SUN/model/game/alone/Q_CURRENT.pk', "rb") as file:
     Q = pickle.load(file)
-
-count = 0
-for i in range(len(Q)):
-    if Q[i].max() == 0:
-        count +=1
-count
-count/len(Q)
 
 
 Q_ = combine(weights = [1,1,1,1],versions=['_coins_crates_games_50k','_trainer_crates_10k','init_4_trainer_10000','init_2_trainers_random_peaceful_5000'],path='./agent_code/agent_SUN/model/combine/')
